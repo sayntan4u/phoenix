@@ -6,6 +6,7 @@ from threading import *
 import tkinter.font as tkFont
 import json
 from tkinter import simpledialog
+from PIL import Image
 
 
 class PhnxWindow:
@@ -14,8 +15,10 @@ class PhnxWindow:
         self.statement = ""
         self.winSetup(window)
         self.setup(window)
-        self.modalSetup()
         self.accSetup()
+        self.modalSetup(window)
+        self.status_text = []
+        
         #self.status = Label(text="")
 
     def setup(self,window):
@@ -85,19 +88,19 @@ class PhnxWindow:
             width = 30,
             height = 30)
 
-        #minimize
-        self.img3 = PhotoImage(file = f"img/img3.png")
-        self.b3 = Button(
-            image = self.img3,
-            borderwidth = 0,
-            highlightthickness = 0,
-            #command = btn_clicked,
-            relief = "flat")
+        # #minimize
+        # self.img3 = PhotoImage(file = f"img/img3.png")
+        # self.b3 = Button(
+        #     image = self.img3,
+        #     borderwidth = 0,
+        #     highlightthickness = 0,
+        #     #command = btn_clicked,
+        #     relief = "flat")
 
-        self.b3.place(
-            x = 726, y = 8,
-            width = 30,
-            height = 30)
+        # self.b3.place(
+        #     x = 726, y = 8,
+        #     width = 30,
+        #     height = 30)
 
         #statement
         self.img4 = PhotoImage(file = f"img/img4.png")
@@ -236,7 +239,7 @@ class PhnxWindow:
         return filename
 
     def btnGenClicked(self):
-        self.c.place(x = 40, y = 120)
+        self.c.place(x = 40, y = 65)
         t1=Thread(target=self.processData)
         t1.start()
 
@@ -276,42 +279,72 @@ class PhnxWindow:
         #self.status.config(text = "ICRequestForm.pdf generated !!")
         self.updateProc("ICRequestForm.pdf generated !!")
 
-        obj.img2pdf(self.trans,"pdf/trans.pdf") # -> trans.pdf
-       # self.status.config(text = "trans.pdf generated !!")
-        self.updateProc("trans.pdf generated !!")
+        if(not(self.trans.endswith('.pdf'))):
+            obj.img2pdf(self.trans,"pdf/trans.pdf") # -> trans.pdf
+            #self.status.config(text = "trans.pdf generated !!")
+            self.updateProc("trans.pdf generated !!")
+            self.trans = 'pdf/trans.pdf'
 
-        obj.img2pdf(self.statement,"pdf/statement.pdf") # -> statement.pdf
-        #self.status.config(text = "statement.pdf generated !!")
-        self.updateProc("statement.pdf generated !!")
+        if(not(self.statement.endswith('.pdf'))):
+            obj.img2pdf(self.statement,"pdf/statement.pdf") # -> statement.pdf
+            #self.status.config(text = "trans.pdf generated !!")
+            self.updateProc("statement.pdf generated !!")
+            self.statement = 'pdf/statement.pdf'
+
 
         #Mailing process
-        p1 = Phnx_Mail(fi)
+        p1 = Phnx_Mail(fi,self.statement, self.trans)
         p1.sendMail()
 
         messagebox.showinfo("Phoenix", "Mail sent !!")
 
         self.c.place_forget()
+        for txt in self.status_text:
+            self.c.delete(txt)
+        
 
-    def modalSetup(self):
+    def modalSetup(self,window):
         self.c = Canvas(
-            bg = "#ff9a9a",
-            height = 405,
+            bg = "#ffffff",
+            height = 490,
             width = 715,
             bd = 0,
-            highlightthickness = 0,
-            relief = "ridge")
+            highlightthickness = 1,
+            relief = "flat")
 
-        self.modal_bg_img = PhotoImage(file = f"img/modal_bg2.png")
+        self.modal_bg_tl_img = PhotoImage(file = f"img/tl.png")
+        self.modal_bg_tl = self.c.create_image(
+            60.0, 130.0,
+            image=self.modal_bg_tl_img)
+
+        self.modal_bg_br_img = PhotoImage(file = f"img/br.png")
         self.modal_bg = self.c.create_image(
-            360.0, 200.0,
-            image=self.modal_bg_img)
+            620.0, 370.0,
+            image=self.modal_bg_br_img)
 
-        self.c.create_text(70,20,text = "Processing..", fill = "white", font = ('Segoe UI Light', 16))
-        self.c_y = 50
-        #self.c.place(x = 40, y = 120)
+
+        file=f"img/1fW0bkup.gif"
+        info = Image.open(file)
+        self.frames = info.n_frames
+        print(self.frames)
+        self.im = [PhotoImage(file=file,format=f"gif -index {i}") for i in range(self.frames)]
+        self.count = 0
+        print(self.im.count)
+
+        
+
+        self.gif_label = Label(self.c,image="")
+        self.gif_label.place(x=250, y = 40)
+
+        t1=Thread(target= lambda : self.animation(window,0))
+        t1.start()
+
+        self.c.create_text(363,275,text = "Processing..", fill = "#262626", font = ('Segoe UI Light', 18))
+        self.c_y = 305
+        #self.c.place(x = 40, y = 65)
 
     def updateProc(self, status):
-        self.status_text = self.c.create_text(100, self.c_y, text= status, anchor="nw", fill = "white", font = ('Segoe UI Light', 12) )
+        self.status_text.append(self.c.create_text(360, self.c_y, text= status, fill = "#262626", font = ('Segoe UI Light', 12) ))
         self.c_y = self.c_y + 20
 
     def accSetup(self):
@@ -343,3 +376,12 @@ class PhnxWindow:
                 json.dump(data, jsonFile)
 
             self.label.config(text=self.userIP)
+
+    def animation(self,window,count):
+        im2 = self.im[count]
+
+        self.gif_label.configure(image=im2,height =215, width = 235)
+        self.count += 1
+        if self.count == self.frames:
+            self.count = 0
+        anim = window.after(50,lambda :self.animation(window,self.count))

@@ -9,7 +9,7 @@ import json
 
 #Class for mail
 class Phnx_Mail:
-    def __init__(self, icReqFormInput):
+    def __init__(self, icReqFormInput, statePath, transPath):
         self.msg = EmailMessage()
         self.msg['Subject'] = "iCOUPON REQUEST OF {0}".format(icReqFormInput.PaymentDetails.Amount)
         self.msg['From'] = "maxout.phoenix@gmail.com"
@@ -42,12 +42,16 @@ Chandu
         icReqFormInput.PaymentDetails.UTRNo,
         icReqFormInput.PaymentDetails.Amount))
 
-        self.files = ['pdf/ICRequestForm.pdf', 'pdf/statement.pdf', 'pdf/trans.pdf']
+        self.files = {
+             'pdf/ICRequestForm.pdf' : 'IC Request Form.pdf',             
+             transPath : 'Transfer Screenshot.pdf',
+             statePath : 'Statement.pdf'
+             }
 
         for file in self.files:
             with open(file,'rb') as f:
                 file_data = f.read()
-                file_name = f.name
+                file_name = self.files[file]
             
             self.msg.add_attachment(file_data, maintype = 'application', subtype= 'octet-stream', filename = file_name)
             print("added {0}".format(file_name))
